@@ -4,24 +4,6 @@
 (require 2htdp/universe)
 (require 2htdp/image)
 
-;raco pkg install rsound
-(require rsound)
-
-(define BKG-MUSIC (rs-read "sound/BKGMusicSeamless.wav"))
-
-(define LEAD-TIME (* 1/10 44100))
-
-(define (play-forever sound)
-  (define p (make-pstream))
-  (define len (rs-frames sound))
-  (let loop ([t 0])
-    (pstream-queue p sound (+ t LEAD-TIME))
-    (define next-t (+ t len))
-    (sleep (* 1/44100 (- next-t (pstream-current-frame p))))
-    (loop next-t)))
-
-(play-forever BKG-MUSIC)
-
 (define PROPORTION 0.2)
 (define RESOLUTION 256)
 (define CENTER (make-posn (/ (* RESOLUTION PROPORTION) 2) (/ (* RESOLUTION PROPORTION) 2)))
@@ -113,18 +95,23 @@
                                           (/ (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION) 2))
                                (make-posn 0 0)))
 
-;Tiro, Monster -> Boolean
+;Shoot, Mythos -> Boolean
 ;Given a Shoot, test if some monster was hit
-;(define (tiro-acertou? tiro monstro)
-(define (tiro-acertou? tiro monstro)
-  (and (<= (- (posn-x (mythos-pos monstro)) (posn-x (mythos-center monstro)))
-               (posn-x (shoot-pos tiro))
-               (+ (posn-x (mythos-pos monstro)) (posn-x (mythos-center monstro))))
-           (<= (- (posn-y (mythos-pos monstro)) (posn-y (mythos-center monstro)))
-               (posn-y (shoot-pos tiro))
-               (+ (posn-y (mythos-pos monstro)) (posn-y (mythos-center monstro))))))
+;(define (shoot-hit? shoot monster)
+(define (shoot-hit? shoot monster)
+  (and (<= (- (posn-x (mythos-pos monster)) (posn-x (mythos-center monster)))
+               (posn-x (shoot-pos shoot))
+               (+ (posn-x (mythos-pos monster)) (posn-x (mythos-center monster))))
+           (<= (- (posn-y (mythos-pos monster)) (posn-y (mythos-center monster)))
+               (posn-y (shoot-pos shoot))
+               (+ (posn-y (mythos-pos monster)) (posn-y (mythos-center monster))))))
 
-;Tiro, Monster List -> Monster List
+;Shoot, Mythos-List -> Boolean-List
 ;Given a Shoot, returns a list with the monsters who have died
-(define (monstros-mortos-apos-tiro tiro lista)
-  (map (λ (lista) (tiro-acertou? tiro lista)) lista))
+(define (died-monsters-after-shoot shoot list)
+  (map (λ (list) (shoot-hit? shoot list)) list))
+
+;Mythos -> Image
+;Renders the mythos
+(define (render-mythos mythos)
+  (place-image (mythos-frame1 mythos) (posn-x (mythos-pos mythos)) (posn-y (mythos-pos mythos)) (background-frame SCENE)))
