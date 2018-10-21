@@ -128,3 +128,8 @@
 ;Given a Shoot, returns a list with the monsters who have died
 (define (monstros-mortos-apos-tiro tiro lista)
   (map (λ (lista) (tiro-acertou? tiro lista)) lista))
+
+;Key, Player -> Shoot
+;Given a key and a player, test if the key pressed is space
+(define (test-shoot key player)
+  (if (key? key "space") (place-shoot player)))
