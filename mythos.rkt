@@ -4,11 +4,11 @@
 (require 2htdp/universe)
 (require 2htdp/image)
 
-(define PROPORTION 0.1)
+(define PROPORTION 0.05)
 (define RESOLUTION (* 256 PROPORTION))
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
 (define MAX-HEALTH 8)
-(define EMPTY (empty-scene RESOLUTION RESOLUTION))
+(define EMPTY empty-image)
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -57,6 +57,7 @@
 (define SHUB-NIGGURATH (make-mythos (scale PROPORTION (bitmap "sprites/Shub-Niggurath-1.png"))
                              (scale PROPORTION (bitmap "sprites/Shub-Niggurath-2.png"))
                              CENTER))
+(define DEAD-MONSTER (make-mythos EMPTY EMPTY CENTER))
 
 ;The barrier model is defined, using make-struct
 (define HOLY-WATER-1 (make-barrier (scale PROPORTION (bitmap "sprites/Agua Benta-1.png"))
@@ -92,6 +93,7 @@
                                  CENTER
                                  (make-posn 0 0)
                                  MAX-HEALTH))
+(define BARRIERS-LIST (list HOLY-WATER-1 HOLY-WATER-2 HOLY-WATER-3))
 
 ;The player model is defined, using make-struct
 (define NECRONOMICON (make-player (scale PROPORTION (bitmap "sprites/Necronomicon.png"))
@@ -141,8 +143,8 @@
 ;Number -> Posn
 ;(define (initial-posn number))
 (define (initial-posn number)
-  (make-posn (+ (* 2 RESOLUTION) (posn-x CENTER) (* 2 (/ number 6) RESOLUTION))
-             (+ (* 2 RESOLUTION) (posn-y CENTER) (* 2 (remainder number 6) RESOLUTION))))
+  (make-posn (+ (* 2 RESOLUTION) (posn-x CENTER) (* 2 (remainder number 6) RESOLUTION))
+             (+ (* 2 RESOLUTION) (posn-y CENTER) (* 2 (quotient number 6) (+ (posn-y CENTER) (* 64 PROPORTION))))))
 
 ;All the monsters are defined
 (define MONSTER-1-1 (make-monster 0 NYARLATHOTEP (initial-posn 0) 1))
@@ -175,7 +177,14 @@
 (define MONSTER-5-4 (make-monster 27 BROWN-JENKIN (initial-posn 27) 1))
 (define MONSTER-5-5 (make-monster 28 BROWN-JENKIN (initial-posn 28) 1))
 (define MONSTER-5-6 (make-monster 29 BROWN-JENKIN (initial-posn 29) 1))
-(define BOSS (make-monster 30 CTHULHU (initial-posn 30) 0))
+(define BOSS (make-monster 30 CTHULHU (make-posn CENTER RESOLUTION) 1))
+(define DEAD (make-monster 31 DEAD-MONSTER (make-posn CENTER 0) 1))
+(define MONSTERS-LIST (list MONSTER-1-1 MONSTER-1-2 MONSTER-1-3 MONSTER-1-4 MONSTER-1-5 MONSTER-1-6
+                            MONSTER-2-1 MONSTER-2-2 MONSTER-2-3 MONSTER-2-4 MONSTER-2-5 MONSTER-2-6
+                            MONSTER-3-1 MONSTER-3-2 MONSTER-3-3 MONSTER-3-4 MONSTER-3-5 MONSTER-3-6
+                            MONSTER-4-1 MONSTER-4-2 MONSTER-4-3 MONSTER-4-4 MONSTER-4-5 MONSTER-4-6
+                            MONSTER-5-1 MONSTER-5-2 MONSTER-5-3 MONSTER-5-4 MONSTER-5-5 MONSTER-5-6
+                            BOSS))
 
 ;Shoot, Mythos -> Boolean
 ;Given a Shoot, test if some monster was hit
@@ -193,10 +202,20 @@
 (define (died-monsters-after-shoot shoot list)
   (map (λ (monster) (shoot-hit? shoot monster)) list))
 
-;Mythos Image -> Image
-;Renders the mythos
-(define (render-single-monster monster img)
-  (overlay/offset (mythos-frame1 (monster-type monster))
-                  (- (posn-x (monster-pos monster)) (posn-x (background-center SCENE)))
-                  (- (posn-y (monster-pos monster)) (posn-y (background-center SCENE)))
+;WorldState Mythos Image -> Image
+;Renders a mythos
+(define (render-single-monster ws monster img)
+  (overlay/offset (if (= (monster-life monster) 0) EMPTY
+                       (if (zero? (remainder ws 2))
+                           (mythos-frame1 (monster-type monster))
+                           (mythos-frame2 (monster-type monster))))
+                  (- (posn-x (background-center SCENE)) (posn-x (monster-pos monster)))
+                  (- (posn-y (background-center SCENE)) (posn-y (monster-pos monster)))
                   img))
+
+;List WorldState -> Image
+;Renders all mythos
+(define (render-all-monsters list ws)
+  (if (empty? list)
+      (render-single-monster ws DEAD (background-frame SCENE))
+      (render-single-monster ws (car list) (render-all-monsters (cdr list) ws))))
