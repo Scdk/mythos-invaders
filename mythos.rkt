@@ -4,7 +4,7 @@
 (require 2htdp/universe)
 (require 2htdp/image)
 
-(define PROPORTION 0.05)
+(define PROPORTION 0.06)
 (define RESOLUTION (* 256 PROPORTION))
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
 (define MAX-HEALTH 8)
@@ -59,49 +59,6 @@
                              CENTER))
 (define DEAD-MONSTER (make-mythos EMPTY EMPTY CENTER))
 
-;The barrier model is defined, using make-struct
-(define HOLY-WATER-1 (make-barrier (scale PROPORTION (bitmap "sprites/Agua Benta-1.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-2.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-3.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-4.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-5.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-6.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-7.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-8.png"))
-                                 CENTER
-                                 (make-posn 0 0)
-                                 MAX-HEALTH))
-(define HOLY-WATER-2 (make-barrier (scale PROPORTION (bitmap "sprites/Agua Benta-1.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-2.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-3.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-4.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-5.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-6.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-7.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-8.png"))
-                                 CENTER
-                                 (make-posn 0 0)
-                                 MAX-HEALTH))
-(define HOLY-WATER-3 (make-barrier (scale PROPORTION (bitmap "sprites/Agua Benta-1.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-2.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-3.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-4.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-5.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-6.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-7.png"))
-                                 (scale PROPORTION (bitmap "sprites/Agua Benta-8.png"))
-                                 CENTER
-                                 (make-posn 0 0)
-                                 MAX-HEALTH))
-(define BARRIERS-LIST (list HOLY-WATER-1 HOLY-WATER-2 HOLY-WATER-3))
-
-;The player model is defined, using make-struct
-(define NECRONOMICON (make-player (scale PROPORTION (bitmap "sprites/Necronomicon.png"))
-                                  (make-posn (/ (* (image-width (bitmap "sprites/Necronomicon.png")) PROPORTION) 2)
-                                             (/ (* (image-height (bitmap "sprites/Necronomicon.png")) PROPORTION) 2))
-                                  (make-posn 0 0)
-                                  1))
-
 ;The background model is defined, using make-struct
 (define SCENE (make-background (scale PROPORTION (bitmap "sprites/Background2.png"))
                                (make-posn (* (image-width (bitmap "sprites/Background2.png")) PROPORTION)
@@ -109,29 +66,72 @@
                                (make-posn (/ (* (image-width (bitmap "sprites/Background2.png")) PROPORTION) 2)
                                           (/ (* (image-height (bitmap "sprites/Background2.png")) PROPORTION) 2))))
 
+;The player model is defined, using make-struct
+(define NECRONOMICON (make-player (scale PROPORTION (bitmap "sprites/Necronomicon.png"))
+                                  (make-posn (/ (* (image-width (bitmap "sprites/Necronomicon.png")) PROPORTION) 2)
+                                             (/ (* (image-height (bitmap "sprites/Necronomicon.png")) PROPORTION) 2))
+                                  (make-posn (posn-x (background-center SCENE)) (- (posn-y (background-size SCENE)) RESOLUTION))
+                                  1))
+
+;The barrier model is defined, using make-struct
+(define HOLY-WATER-1 (make-barrier (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-1.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-2.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-3.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-4.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-5.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-6.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-7.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-8.png"))
+                                 CENTER
+                                 (make-posn 0 (posn-y (background-size SCENE)))
+                                 MAX-HEALTH))
+(define HOLY-WATER-2 (make-barrier (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-1.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-2.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-3.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-4.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-5.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-6.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-7.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-8.png"))
+                                 CENTER
+                                 (make-posn (posn-x (background-center SCENE)) (posn-y (background-size SCENE)))
+                                 MAX-HEALTH))
+(define HOLY-WATER-3 (make-barrier (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-1.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-2.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-3.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-4.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-5.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-6.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-7.png"))
+                                 (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-8.png"))
+                                 CENTER
+                                 (make-posn (posn-x (background-size SCENE)) (posn-y (background-size SCENE)))
+                                 MAX-HEALTH))
+(define BARRIERS-LIST (list HOLY-WATER-1 HOLY-WATER-2 HOLY-WATER-3))
+
 ;The shoot model is defined, using make-struct
-(define PLAYER-SHOT (make-shoot (scale PROPORTION (bitmap "sprites/Tiro.png"))
+(define PLAYER-SHOOT (make-shoot (scale PROPORTION (bitmap "sprites/Tiro.png"))
                                (make-posn (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION)
                                           (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION))
                                (make-posn (/ (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION) 2)
                                           (/ (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION) 2))
                                (make-posn 0 0)
                                0))
-(define ENEMY-SHOT-1 (make-shoot (scale PROPORTION (bitmap "sprites/Shoot2.png"))
+(define ENEMY-SHOOT-1 (make-shoot (scale PROPORTION (bitmap "sprites/Shoot2.png"))
                                (make-posn (* (image-width (bitmap "sprites/Shoot2.png")) PROPORTION)
                                           (* (image-height (bitmap "sprites/Shoot2.png")) PROPORTION))
                                (make-posn (/ (* (image-width (bitmap "sprites/Shoot2.png")) PROPORTION) 2)
                                           (/ (* (image-height (bitmap "sprites/Shoot2.png")) PROPORTION) 2))
                                (make-posn 0 0)
                                0))
-(define ENEMY-SHOT-2 (make-shoot (scale PROPORTION (bitmap "sprites/Shoot2.png"))
+(define ENEMY-SHOOT-2 (make-shoot (scale PROPORTION (bitmap "sprites/Shoot2.png"))
                                (make-posn (* (image-width (bitmap "sprites/Shoot2.png")) PROPORTION)
                                           (* (image-height (bitmap "sprites/Shoot2.png")) PROPORTION))
                                (make-posn (/ (* (image-width (bitmap "sprites/Shoot2.png")) PROPORTION) 2)
                                           (/ (* (image-height (bitmap "sprites/Shoot2.png")) PROPORTION) 2))
                                (make-posn 0 0)
                                0))
-(define ENEMY-SHOT-3 (make-shoot (scale PROPORTION (bitmap "sprites/Shoot2.png"))
+(define ENEMY-SHOOT-3 (make-shoot (scale PROPORTION (bitmap "sprites/Shoot2.png"))
                                (make-posn (* (image-width (bitmap "sprites/Shoot2.png")) PROPORTION)
                                           (* (image-height (bitmap "sprites/Shoot2.png")) PROPORTION))
                                (make-posn (/ (* (image-width (bitmap "sprites/Shoot2.png")) PROPORTION) 2)
@@ -177,8 +177,8 @@
 (define MONSTER-5-4 (make-monster 27 BROWN-JENKIN (initial-posn 27) 1))
 (define MONSTER-5-5 (make-monster 28 BROWN-JENKIN (initial-posn 28) 1))
 (define MONSTER-5-6 (make-monster 29 BROWN-JENKIN (initial-posn 29) 1))
-(define BOSS (make-monster 30 CTHULHU (make-posn CENTER RESOLUTION) 1))
-(define DEAD (make-monster 31 DEAD-MONSTER (make-posn CENTER 0) 1))
+(define BOSS (make-monster 30 CTHULHU (make-posn (posn-x CENTER) RESOLUTION) 1))
+(define DEAD (make-monster 31 DEAD-MONSTER (make-posn (posn-x CENTER) 0) 1))
 (define MONSTERS-LIST (list MONSTER-1-1 MONSTER-1-2 MONSTER-1-3 MONSTER-1-4 MONSTER-1-5 MONSTER-1-6
                             MONSTER-2-1 MONSTER-2-2 MONSTER-2-3 MONSTER-2-4 MONSTER-2-5 MONSTER-2-6
                             MONSTER-3-1 MONSTER-3-2 MONSTER-3-3 MONSTER-3-4 MONSTER-3-5 MONSTER-3-6
@@ -219,3 +219,63 @@
   (if (empty? list)
       (render-single-monster ws DEAD (background-frame SCENE))
       (render-single-monster ws (car list) (render-all-monsters (cdr list) ws))))
+
+;Barrier -> Image
+;Renders a barrier
+(define (render-single-barrier barrier img)
+  (overlay/offset (cond
+                    ([equal? (barrier-life barrier) 8] (barrier-frame8 barrier))
+                    ([equal? (barrier-life barrier) 7] (barrier-frame7 barrier))
+                    ([equal? (barrier-life barrier) 6] (barrier-frame6 barrier))
+                    ([equal? (barrier-life barrier) 5] (barrier-frame5 barrier))
+                    ([equal? (barrier-life barrier) 4] (barrier-frame4 barrier))
+                    ([equal? (barrier-life barrier) 3] (barrier-frame3 barrier))
+                    ([equal? (barrier-life barrier) 2] (barrier-frame2 barrier))
+                    ([equal? (barrier-life barrier) 1] (barrier-frame1 barrier))
+                    (else EMPTY))
+                  (- (posn-x (background-center SCENE)) (posn-x (barrier-pos barrier)))
+                  (- (posn-y (background-center SCENE)) (posn-y (barrier-pos barrier)))
+                  img))
+
+;List -> Image
+;Renders all barriers
+(define (render-all-barriers list img)
+  (overlay (apply overlay (map (λ (barrier) (render-single-barrier barrier empty-image)) list))
+           img))
+
+;Image -> Image
+;Renders the player
+(define (render-player img)
+  (overlay/offset (if (zero? (player-life NECRONOMICON)) EMPTY (player-frame NECRONOMICON))
+                  (- (posn-x (background-center SCENE)) (posn-x (player-pos NECRONOMICON)))
+                  (- (posn-y (background-center SCENE)) (posn-y (player-pos NECRONOMICON)))
+                  img))
+
+;WorldState -> Image
+;Renders the player and the mythos
+(define (render-player-enemy ws)
+   (render-player (render-all-monsters MONSTERS-LIST ws)))
+
+;WorldState -> Image
+;Renders the player, the mythos and the barriers
+(define (render-player-enemy-barrier ws)
+   (render-all-barriers BARRIERS-LIST (render-player (render-all-monsters MONSTERS-LIST ws))))
+
+;Shoot -> Image
+;Renders a shoot
+(define (render-shoot shoot img)
+  (overlay/offset (if (zero? (shoot-life shoot)) EMPTY (shoot-frame shoot))
+                  (- (posn-x (background-center SCENE)) (posn-x (shoot-pos shoot)))
+                  (- (posn-y (background-center SCENE)) (posn-y (shoot-pos shoot)))
+                  img))
+
+;WorldState -> Image
+;Renders the player, the mythos, the barriers and the shoots
+(define (render-player-enemy-barrier-shoot ws)
+  (render-shoot ENEMY-SHOOT-1
+                (render-shoot ENEMY-SHOOT-2
+                              (render-shoot ENEMY-SHOOT-3
+                                            (render-shoot PLAYER-SHOOT
+                                                          (render-all-barriers BARRIERS-LIST
+                                                                               (render-player
+                                                                               (render-all-monsters MONSTERS-LIST ws))))))))
