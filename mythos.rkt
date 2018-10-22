@@ -107,6 +107,11 @@
 (define MONSTER-1-5 (make-monster 4 NYARLATHOTEP (initial-posn 4)))
 (define MONSTER-1-6 (make-monster 5 NYARLATHOTEP (initial-posn 5)))
 
+;Key, Player -> Shoot
+;Given a key and a player, test if the key pressed is space
+(define (test-shoot key player)
+  (if (key? key "space") (place-shoot player) 0))
+
 ;Shoot, Mythos -> Boolean
 ;Given a Shoot, test if some monster was hit
 ;(define (shoot-hit? shoot monster)
