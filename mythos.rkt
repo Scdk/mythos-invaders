@@ -9,12 +9,14 @@
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
 (define MAX-HEALTH 8)
 (define EMPTY empty-image)
+(define EMPTY-BKG (scale PROPORTION (bitmap "sprites/Empty-Background.png")))
 (define PLAYER-MOVEMENT 5)
 (define PLAYER-LOWER-LIMIT (* RESOLUTION 4))
 (define PLAYER-HIGHER-LIMIT (* RESOLUTION 11))
 (define MENU (scale PROPORTION (bitmap "sprites/Title-Screen.png")))
 (define SCORE 0)
 (define BIT-8-RED (make-color 82 16 0))
+(define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -63,7 +65,7 @@
 (define SHUB-NIGGURATH (make-mythos (scale PROPORTION (bitmap "sprites/Shub-Niggurath-1.png"))
                              (scale PROPORTION (bitmap "sprites/Shub-Niggurath-2.png"))
                              CENTER))
-(define DEAD-MONSTER (make-mythos EMPTY EMPTY CENTER))
+(define DEAD-MONSTER (make-mythos empty-image empty-image CENTER))
 
 ;The background model is defined, using make-struct
 (define SCENE (make-background (scale PROPORTION (bitmap "sprites/Background2.png"))
@@ -79,7 +81,7 @@
                                   (make-posn (posn-x (background-center SCENE)) (- (posn-y (background-size SCENE)) RESOLUTION))
                                   1))
 
-;The barrier model is defined, using make-struct
+;The barriers are defined, using make-struct
 (define HOLY-WATER-1 (make-barrier (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-1.png"))
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-2.png"))
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-3.png"))
@@ -89,7 +91,7 @@
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-7.png"))
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-8.png"))
                                  CENTER
-                                 (make-posn 0 (posn-y (background-size SCENE)))
+                                 (make-posn PLAYER-LOWER-LIMIT (- (posn-y (background-size SCENE)) (* 3.5 RESOLUTION)))
                                  MAX-HEALTH))
 (define HOLY-WATER-2 (make-barrier (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-1.png"))
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-2.png"))
@@ -100,7 +102,7 @@
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-7.png"))
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-8.png"))
                                  CENTER
-                                 (make-posn (posn-x (background-center SCENE)) (posn-y (background-size SCENE)))
+                                 (make-posn (posn-x (background-center SCENE)) (- (posn-y (background-size SCENE)) (* 3.5 RESOLUTION)))
                                  MAX-HEALTH))
 (define HOLY-WATER-3 (make-barrier (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-1.png"))
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-2.png"))
@@ -111,12 +113,26 @@
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-7.png"))
                                  (scale (* 1.25 PROPORTION) (bitmap "sprites/Agua Benta-8.png"))
                                  CENTER
-                                 (make-posn (posn-x (background-size SCENE)) (posn-y (background-size SCENE)))
+                                 (make-posn PLAYER-HIGHER-LIMIT (- (posn-y (background-size SCENE)) (* 3.5 RESOLUTION)))
                                  MAX-HEALTH))
 (define BARRIERS-LIST (list HOLY-WATER-1 HOLY-WATER-2 HOLY-WATER-3))
 
-;The shoot model is defined, using make-struct
+;The shoots are defined, using make-struct
 (define PLAYER-SHOOT (make-shoot (scale PROPORTION (bitmap "sprites/Tiro.png"))
+                               (make-posn (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION)
+                                          (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION))
+                               (make-posn (/ (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION) 2)
+                                          (/ (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION) 2))
+                               (make-posn 0 0)
+                               0))
+(define PLAYER-SHOOT-2 (make-shoot (scale PROPORTION (bitmap "sprites/Tiro.png"))
+                               (make-posn (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION)
+                                          (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION))
+                               (make-posn (/ (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION) 2)
+                                          (/ (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION) 2))
+                               (make-posn 0 0)
+                               0))
+(define PLAYER-SHOOT-3 (make-shoot (scale PROPORTION (bitmap "sprites/Tiro.png"))
                                (make-posn (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION)
                                           (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION))
                                (make-posn (/ (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION) 2)
@@ -144,6 +160,8 @@
                                           (/ (* (image-height (bitmap "sprites/Shoot2.png")) PROPORTION) 2))
                                (make-posn 0 0)
                                0))
+(define PLAYER-SHOOTS (list PLAYER-SHOOT PLAYER-SHOOT-2 PLAYER-SHOOT-3))
+(define ENEMY-SHOOTS (list ENEMY-SHOOT-1 ENEMY-SHOOT-2 ENEMY-SHOOT-3))
 
 ;Function to define initial position
 ;Number -> Posn
@@ -207,7 +225,7 @@
     [else (begin
             (set-shoot-life! PLAYER-SHOOT  1)
             (set-shoot-pos! PLAYER-SHOOT (make-posn (posn-x (player-pos NECRONOMICON)) (posn-y (player-pos NECRONOMICON))))
-            (add1 ws))]))
+            ws)]))
 
 ;Key -> Image
 ;Given key, checks if the key is left or right and move the player according
@@ -216,41 +234,12 @@
         [(key=? key "left")
          (if (< PLAYER-LOWER-LIMIT (posn-x (player-pos NECRONOMICON))) (begin
            (set-player-pos! NECRONOMICON (make-posn (- (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) (posn-y (player-pos NECRONOMICON))))
-           (add1 ws)) (add1 ws))]
+           ws) ws)]
         [(key=? key "right")
          (if (< (posn-x (player-pos NECRONOMICON)) PLAYER-HIGHER-LIMIT) (begin
            (set-player-pos! NECRONOMICON (make-posn (+ (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) (posn-y (player-pos NECRONOMICON))))
-           (add1 ws)) (add1 ws))]
+           ws) ws)]
         [else ws]))
-
-;Shoot, Mythos -> Boolean
-;Given a Shoot, test if some monster was hit
-;(define (shoot-hit? shoot monster)
-(define (shoot-hit? shoot monster)
-  (and (<= (- (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster))))
-               (posn-x (shoot-pos shoot))
-               (+ (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster)))))
-           (<= (- (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))
-               (posn-y (shoot-pos shoot))
-               (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster)))))))
-
-;Shoot, Mythos-List -> Boolean-List
-;Given a Shoot, returns a list with the monsters who have died
-(define (died-monsters-after-shoot shoot list)
-  (map (λ (monster) (shoot-hit? shoot monster)) list))
-
-;Number -> Number
-;Given a number of a monster, returns the equivalent score
-(define (monster-score number)
-        (cond
-          [(<= 0 number 5) 40]
-          [(<= 6 number 17) 20]
-          [(<= 18 number 29) 10]))
-
-;Number -> Void
-;Set the score value to given number
-(define (scoreboard number)
-        (set! SCORE (+ SCORE (monster-score number))))
 
 ;WorldState Mythos Image -> Image
 ;Renders a mythos
@@ -290,7 +279,7 @@
 ;List -> Image
 ;Renders all barriers
 (define (render-all-barriers list img)
-  (overlay (apply overlay (map (λ (barrier) (render-single-barrier barrier empty-image)) list))
+  (overlay (apply overlay (map (λ (barrier) (render-single-barrier barrier EMPTY-BKG)) list))
            img))
 
 ;Image -> Image
@@ -315,20 +304,24 @@
 ;Renders a shoot
 (define (render-shoot shoot img)
   (overlay/offset (if (zero? (shoot-life shoot)) EMPTY (shoot-frame shoot))
-                  (- (posn-x (background-center SCENE)) (posn-x (shoot-pos shoot)))
-                  (- (posn-y (background-center SCENE)) (posn-y (shoot-pos shoot)))
-                  img))
+               (- (posn-x (background-center SCENE)) (posn-x (shoot-pos shoot)))
+               (- (posn-y (background-center SCENE)) (posn-y (shoot-pos shoot)))
+               img))
+
+;List -> Image
+;Renders all shoots
+(define (render-all-shoots player-list monster-list img)
+  (overlay (apply overlay (map (λ (shoot) (render-shoot shoot EMPTY-BKG)) player-list))
+           (apply overlay (map (λ (shoot) (render-shoot shoot EMPTY-BKG)) monster-list))
+           img))
 
 ;WorldState -> Image
 ;Renders the player, the mythos, the barriers and the shoots
 (define (render-player-enemy-barrier-shoot ws)
-  (render-shoot ENEMY-SHOOT-1
-                (render-shoot ENEMY-SHOOT-2
-                              (render-shoot ENEMY-SHOOT-3
-                                            (render-shoot PLAYER-SHOOT
-                                                          (render-all-barriers BARRIERS-LIST
-                                                                               (render-player
-                                                                                (render-all-monsters MONSTERS-LIST ws))))))))
+  (render-all-shoots PLAYER-SHOOTS ENEMY-SHOOTS
+                     (render-all-barriers BARRIERS-LIST
+                                          (render-player
+                                           (render-all-monsters MONSTERS-LIST ws)))))
 
 ;WorldState Image -> Image
 ;Renders all, including the score
@@ -337,10 +330,54 @@
       (if (zero? (monster-life BOSS))
           (overlay/offset (text (number->string SCORE) (* 1.25 RESOLUTION) BIT-8-RED)
                           (- (posn-x (background-center SCENE)) (+ RESOLUTION
-                                                                   (/ (image-width (text (number->string SCORE) (* 1.25 RESOLUTION) "White")) 2)))
+                                                                   (/ (image-width (text (number->string SCORE)
+                                                                                         (* 1.25 RESOLUTION) "White")) 2)))
                           (- (posn-y (background-center SCENE)) RESOLUTION)
                           (render-player-enemy-barrier-shoot ws))
           (render-player-enemy-barrier-shoot ws))))
+
+;Monster -> Image
+;Renders the death of a monster
+(define (render-death-frame ws monster)
+  (place-image DEATH-FRAME
+               (posn-x (monster-pos monster))
+               (posn-y (monster-pos monster))
+               (render ws)))
+
+;Number -> Void
+;Set the score value to given number
+(define (scoreboard number)
+        (set! SCORE (+ SCORE (monster-score number))))
+
+;Number -> Number
+;Given a number of a monster, returns the equivalent score
+(define (monster-score number)
+        (cond
+          [(<= 0 number 5) (scoreboard 40)]
+          [(<= 6 number 17) (scoreboard 20)]
+          [(<= 18 number 29) (scoreboard 10)]))
+
+;Shoot, Mythos -> Boolean
+;Given a Shoot, test if some monster was hit
+(define (shoot-hit? ws shoot monster)
+  (if (and (<= (- (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster))))
+               (posn-x (shoot-pos shoot))
+               (+ (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster)))))
+           (<= (- (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))
+               (posn-y (shoot-pos shoot))
+               (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))))
+      (begin
+        (set-shoot-life! shoot 0)
+        (set-monster-life! monster 0)
+        (monster-score (monster-number monster))
+        (render-death-frame ws monster)
+        #t)
+      #f))
+
+;Shoot, Mythos-List -> Boolean-List
+;Given a Shoot, returns a list with the monsters who have died
+(define (died-monsters-after-shoot ws shoot-list monster-list)
+  (map (λ (shoot monster) (shoot-hit? ws shoot list)) shoot-list monster-list))
 
 (define (main ws)
   (big-bang ws
