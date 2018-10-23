@@ -118,7 +118,7 @@
 (define BARRIERS-LIST (list HOLY-WATER-1 HOLY-WATER-2 HOLY-WATER-3))
 
 ;The shoots are defined, using make-struct
-(define PLAYER-SHOOT (make-shoot (scale PROPORTION (bitmap "sprites/Tiro.png"))
+(define PLAYER-SHOOT-1 (make-shoot (scale PROPORTION (bitmap "sprites/Tiro.png"))
                                (make-posn (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION)
                                           (* (image-height (bitmap "sprites/Tiro.png")) PROPORTION))
                                (make-posn (/ (* (image-width (bitmap "sprites/Tiro.png")) PROPORTION) 2)
@@ -160,7 +160,7 @@
                                           (/ (* (image-height (bitmap "sprites/Shoot2.png")) PROPORTION) 2))
                                (make-posn 0 0)
                                0))
-(define PLAYER-SHOOTS (list PLAYER-SHOOT PLAYER-SHOOT-2 PLAYER-SHOOT-3))
+(define PLAYER-SHOOTS (list PLAYER-SHOOT-1 PLAYER-SHOOT-2 PLAYER-SHOOT-3))
 (define ENEMY-SHOOTS (list ENEMY-SHOOT-1 ENEMY-SHOOT-2 ENEMY-SHOOT-3))
 
 ;Function to define initial position
@@ -210,25 +210,35 @@
                             MONSTER-5-1 MONSTER-5-2 MONSTER-5-3 MONSTER-5-4 MONSTER-5-5 MONSTER-5-6
                             BOSS))
 
-;Key, Player -> Image
+;Key, Player -> Number
 ;Given a WorldState and a key, test what key it is, if it is space calls test-space, if not calls move-player
 (define (test-key ws key)
   (cond
     [(key=? key " ") (test-space ws)]
     [else (move-player ws key)]))
 
-;Key, WorldState -> Image
+;Key, WorldState -> Number
 ;Given the WorldState, checks if the game is paused, if it is, it begins the game, if not the player shoots
 (define (test-space ws)
   (cond
     [(equal? ws 0) (add1 ws)]
-    [else (begin
-            (set-shoot-life! PLAYER-SHOOT  1)
-            (set-shoot-pos! PLAYER-SHOOT (make-posn (posn-x (player-pos NECRONOMICON)) (posn-y (player-pos NECRONOMICON))))
-            ws)]))
+    [else (cond
+            [(equal? (shoot-life PLAYER-SHOOT-1) 0) (begin
+                                                      (set-shoot-life! PLAYER-SHOOT-1  1)
+                                                      (set-shoot-pos! PLAYER-SHOOT-1 (make-posn (posn-x (player-pos NECRONOMICON))
+                                                                                                (posn-y (player-pos NECRONOMICON))))ws)]
+            [(equal? (shoot-life PLAYER-SHOOT-2) 0) (begin
+                                                      (set-shoot-life! PLAYER-SHOOT-2  1)
+                                                      (set-shoot-pos! PLAYER-SHOOT-2 (make-posn (posn-x (player-pos NECRONOMICON))
+                                                                                                (posn-y (player-pos NECRONOMICON))))ws)]
+            [(equal? (shoot-life PLAYER-SHOOT-3) 0) (begin
+                                                      (set-shoot-life! PLAYER-SHOOT-3  1)
+                                                      (set-shoot-pos! PLAYER-SHOOT-3 (make-posn (posn-x (player-pos NECRONOMICON))
+                                                                                                (posn-y (player-pos NECRONOMICON))))ws)]
+            [else ws])]))
 
-;Key -> Image
-;Given key, checks if the key is left or right and move the player according
+;Key -> Number
+;Given WorldState and key, checks if the key is left or right and move the player according
 (define (move-player ws key)
   (cond
         [(key=? key "left")
