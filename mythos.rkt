@@ -9,6 +9,9 @@
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
 (define MAX-HEALTH 8)
 (define EMPTY empty-image)
+(define PLAYER-MOVEMENT 5)
+(define PLAYER-LOWER-LIMIT (* RESOLUTION 4))
+(define PLAYER-HIGHER-LIMIT (* RESOLUTION 11))
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -185,6 +188,32 @@
                             MONSTER-4-1 MONSTER-4-2 MONSTER-4-3 MONSTER-4-4 MONSTER-4-5 MONSTER-4-6
                             MONSTER-5-1 MONSTER-5-2 MONSTER-5-3 MONSTER-5-4 MONSTER-5-5 MONSTER-5-6
                             BOSS))
+
+;Key, Player -> Image
+;Given a WorldState and a key, test what key it is, if it is space calls test-space, if not calls move-player
+(define (test-key ws key)
+  (cond
+    [(key=? key " ") (test-space ws)]
+    [else (move-player key)]))
+
+;Key, WorldState -> Image
+;Given the WorldState, checks if the game is paused, if it is, it begins the game, if not the player shoots
+(define (test-space ws)
+  (cond
+    [(equal? ws 0) (add1 ws)]
+    [else (begin
+            (set-shoot-life! PLAYER-SHOOT  1)
+            (set-shoot-pos! PLAYER-SHOOT (make-posn (posn-x (player-pos NECRONOMICON)) 0)))]))
+
+;Key -> Image
+;Given key, checks if the key is left or right and move the player according
+(define (move-player key)
+  (if (and
+       (< PLAYER-LOWER-LIMIT (posn-x (player-pos NECRONOMICON)))
+       (< (posn-x (player-pos NECRONOMICON)) PLAYER-HIGHER-LIMIT))
+      (cond
+        [(key=? key "left") (set-player-pos! NECRONOMICON (make-posn (- (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) 0))]
+        [(key=? key "right") (set-player-pos! NECRONOMICON (make-posn (+ (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) 0))])0))                                                                                                                                 
 
 ;Shoot, Mythos -> Boolean
 ;Given a Shoot, test if some monster was hit
