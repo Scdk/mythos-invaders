@@ -4,7 +4,7 @@
 (require 2htdp/universe)
 (require 2htdp/image)
 
-(define PROPORTION 0.06)
+(define PROPORTION 0.125)
 (define RESOLUTION (* 256 PROPORTION))
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
 (define MAX-HEALTH 8)
@@ -12,6 +12,9 @@
 (define PLAYER-MOVEMENT 5)
 (define PLAYER-LOWER-LIMIT (* RESOLUTION 4))
 (define PLAYER-HIGHER-LIMIT (* RESOLUTION 11))
+(define MENU (scale PROPORTION (bitmap "sprites/Title-Screen.png")))
+(define SCORE 0)
+(define BIT-8-RED (make-color 82 16 0))
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -180,7 +183,7 @@
 (define MONSTER-5-4 (make-monster 27 BROWN-JENKIN (initial-posn 27) 1))
 (define MONSTER-5-5 (make-monster 28 BROWN-JENKIN (initial-posn 28) 1))
 (define MONSTER-5-6 (make-monster 29 BROWN-JENKIN (initial-posn 29) 1))
-(define BOSS (make-monster 30 CTHULHU (make-posn (posn-x CENTER) RESOLUTION) 1))
+(define BOSS (make-monster 30 CTHULHU (make-posn (posn-x CENTER) RESOLUTION) 0))
 (define DEAD (make-monster 31 DEAD-MONSTER (make-posn (posn-x CENTER) 0) 1))
 (define MONSTERS-LIST (list MONSTER-1-1 MONSTER-1-2 MONSTER-1-3 MONSTER-1-4 MONSTER-1-5 MONSTER-1-6
                             MONSTER-2-1 MONSTER-2-2 MONSTER-2-3 MONSTER-2-4 MONSTER-2-5 MONSTER-2-6
@@ -203,7 +206,7 @@
     [(equal? ws 0) (add1 ws)]
     [else (begin
             (set-shoot-life! PLAYER-SHOOT  1)
-            (set-shoot-pos! PLAYER-SHOOT (make-posn (posn-x (player-pos NECRONOMICON)) 0)))]))
+            (set-shoot-pos! PLAYER-SHOOT (make-posn (posn-x (player-pos NECRONOMICON)) (add1 ws))))]))
 
 ;Key -> Image
 ;Given key, checks if the key is left or right and move the player according
@@ -230,6 +233,19 @@
 ;Given a Shoot, returns a list with the monsters who have died
 (define (died-monsters-after-shoot shoot list)
   (map (λ (monster) (shoot-hit? shoot monster)) list))
+
+;Number -> Number
+;Given a number of a monster, returns the equivalent score
+(define (monster-score number)
+        (cond
+          [(<= 0 number 5) 40]
+          [(<= 6 number 17) 20]
+          [(<= 18 number 29) 10]))
+
+;Number -> Void
+;Set the score value to given number
+(define (scoreboard number)
+        (set! SCORE (+ SCORE (monster-score number))))
 
 ;WorldState Mythos Image -> Image
 ;Renders a mythos
@@ -307,4 +323,21 @@
                                             (render-shoot PLAYER-SHOOT
                                                           (render-all-barriers BARRIERS-LIST
                                                                                (render-player
-                                                                               (render-all-monsters MONSTERS-LIST ws))))))))
+                                                                                (render-all-monsters MONSTERS-LIST ws))))))))
+
+;WorldState Image -> Image
+;Renders all, including the score
+(define (render ws)
+  (if (zero? ws) MENU 
+      (if (zero? (monster-life BOSS))
+          (overlay/offset (text (number->string SCORE) (* 1.25 RESOLUTION) BIT-8-RED)
+                          (- (posn-x (background-center SCENE)) (+ RESOLUTION
+                                                                   (/ (image-width (text (number->string SCORE) (* 1.25 RESOLUTION) "White")) 2)))
+                          (- (posn-y (background-center SCENE)) RESOLUTION)
+                          (render-player-enemy-barrier-shoot ws))
+          (render-player-enemy-barrier-shoot ws))))
+
+(define (main ws)
+  (big-bang ws
+    (to-draw render)
+    (on-key test-key)))
