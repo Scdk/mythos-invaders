@@ -17,6 +17,7 @@
 (define SCORE 0)
 (define BIT-8-RED (make-color 82 16 0))
 (define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
+(define SAME-NUMBER 0)  
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -250,6 +251,41 @@
            (set-player-pos! NECRONOMICON (make-posn (+ (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) (posn-y (player-pos NECRONOMICON))))
            ws) ws)]
         [else ws]))
+
+;WorldState -> WorldState
+(define (monster-shoot ws)
+  (cond
+    [(equal? (shoot-life ENEMY-SHOOT-1) 0) (begin
+                                           (set-shoot-life! ENEMY-SHOOT-1  1)
+                                           (set-shoot-pos! ENEMY-SHOOT-1 (make-posn (posn-x
+                                                                                     (monster-pos (list-ref (map monster-alive MONSTERS-LIST) (random-number 30))))
+                                                                                    (posn-y
+                                                                                     (monster-pos (list-ref (map monster-alive MONSTERS-LIST) SAME-NUMBER)))))ws)]
+    [(equal? (shoot-life ENEMY-SHOOT-2) 0) (begin
+                                           (set-shoot-life! ENEMY-SHOOT-2  1)
+                                           (set-shoot-pos! ENEMY-SHOOT-2 (make-posn (posn-x
+                                                                                     (monster-pos (list-ref (map monster-alive MONSTERS-LIST) (random-number 30))))
+                                                                                    (posn-y
+                                                                                     (monster-pos (list-ref (map monster-alive MONSTERS-LIST) SAME-NUMBER)))))ws)]
+    [(equal? (shoot-life ENEMY-SHOOT-3) 0) (begin
+                                           (set-shoot-life! ENEMY-SHOOT-3  1)
+                                           (set-shoot-pos! ENEMY-SHOOT-3 (make-posn (posn-x
+                                                                                     (monster-pos (list-ref (map monster-alive MONSTERS-LIST) (random-number 30))))
+                                                                                    (posn-y
+                                                                                     (monster-pos (list-ref (map monster-alive MONSTERS-LIST) SAME-NUMBER)))))ws)]
+    [else ws]))
+
+;Struct -> Struct
+;Given monster test if life is 1, if is returns monster, else returns null
+(define (monster-alive list)
+  (cond
+    [(equal? (monster-life list) 1) list]
+    [else null]))
+
+;Number -> Number
+;Given a number generates a random number in range of the given number that is stored in SAME-NUMBER
+(define (random-number number)
+  (begin (set! SAME-NUMBER (random number)) SAME-NUMBER))
 
 ;WorldState Mythos Image -> Image
 ;Renders a mythos
