@@ -19,6 +19,7 @@
 (define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
 (define SAME-NUMBER 0)
 (define GAME-OVER #f)
+(define RENDER-DEATH-FRAME 31)
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -296,7 +297,7 @@
 ;Renders a mythos
 (define (render-single-monster ws monster img)
   (overlay/offset (if (= (monster-life monster) 0) EMPTY
-                       (if (zero? (remainder ws 2))
+                       (if (> (remainder ws 20) 9)
                            (mythos-frame1 (monster-type monster))
                            (mythos-frame2 (monster-type monster))))
                   (- (posn-x (background-center SCENE)) (posn-x (monster-pos monster)))
@@ -396,7 +397,7 @@
 ;Number -> Void
 ;Set the score value to given number
 (define (scoreboard number)
-        (set! SCORE (+ SCORE (monster-score number))))
+        (set! SCORE (+ SCORE number)))
 
 ;Number -> Number
 ;Given a number of a monster, returns the equivalent score
@@ -421,10 +422,10 @@
                    (posn-y (shoot-pos shoot))
                    (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))))
               (begin
-                (render-death-frame ws monster) ; <----------------------------------------------------------------------------------- CORRIGIR (NÃO RENDERIZA FRAME DE MORTE)
+                (set! RENDER-DEATH-FRAME monster) ; <----------------------------------------------------------------------------------- CORRIGIR (NÃO RENDERIZA FRAME DE MORTE)
                 (set-shoot-life! shoot 0)
-                (set-monster-life! monster 0))
-                ;(monster-score (monster-number monster)) <----------------------------------------------------------------------------------- CORRIGIR (JOGO CRASHA)
+                (set-monster-life! monster 0)
+                (monster-score (monster-number monster)))
               (out-of-bounds shoot)))))
 
 ;Shoot, Mythos -> Void
@@ -490,11 +491,11 @@
 ;WorldState -> WorldState
 ;At every tick, this function calls others functions and increments the worldstate
 (define (tock ws)
-  (begin
-    (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
-    (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
-    (shoot-hit ws MONSTERS-LIST)
-    (if (shoot-hit ws NECRONOMICON) -1 (add1 ws))))
+  (if (zero? ws) ws (begin
+                      (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
+                      (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
+                      (shoot-hit ws MONSTERS-LIST)
+                      (if (shoot-hit ws NECRONOMICON) -1 (add1 ws)))))
 
 (define (main ws)
   (big-bang ws
