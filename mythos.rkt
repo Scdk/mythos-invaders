@@ -10,7 +10,7 @@
 (define MAX-HEALTH 8)
 (define EMPTY empty-image)
 (define EMPTY-BKG (scale PROPORTION (bitmap "sprites/Empty-Background.png")))
-(define PLAYER-MOVEMENT 5)
+(define PLAYER-MOVEMENT (* 40 PROPORTION))
 (define PLAYER-LOWER-LIMIT (* RESOLUTION 4))
 (define PLAYER-HIGHER-LIMIT (* RESOLUTION 11))
 (define MENU (scale PROPORTION (bitmap "sprites/Title-Screen.png")))
@@ -18,6 +18,7 @@
 (define BIT-8-RED (make-color 82 16 0))
 (define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
 (define SAME-NUMBER 0)
+(define GAME-OVER #f)
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -405,30 +406,99 @@
           [(<= 6 number 17) (scoreboard 20)]
           [(<= 18 number 29) (scoreboard 10)]))
 
-;Shoot, Mythos -> Boolean
-;Given a Shoot, test if some monster was hit
-(define (shoot-hit? ws shoot monster)
-  (if (and (<= (- (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster))))
-               (posn-x (shoot-pos shoot))
-               (+ (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster)))))
-           (<= (- (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))
-               (posn-y (shoot-pos shoot))
-               (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))))
-      (begin
-        (set-shoot-life! shoot 0)
-        (set-monster-life! monster 0)
-        (monster-score (monster-number monster))
-        (render-death-frame ws monster)
-        #t)
-      #f))
+;WorldState, Shoot, Monster -> Void
+;Auxiliar function for monster hit 
+(define (shoot-hit-monster-aux ws shoot monster)
+  (if (zero? (shoot-life shoot))
+      (void)
+      (if (zero? (monster-life monster))
+          (void)
+          (if (and
+               (<= (- (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster))))
+                   (posn-x (shoot-pos shoot))
+                   (+ (posn-x (monster-pos monster)) (posn-x (mythos-center (monster-type monster)))))
+               (<= (- (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))
+                   (posn-y (shoot-pos shoot))
+                   (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))))
+              (begin
+                (render-death-frame ws monster) ; <----------------------------------------------------------------------------------- CORRIGIR (NÃO RENDERIZA FRAME DE MORTE)
+                (set-shoot-life! shoot 0)
+                (set-monster-life! monster 0))
+                ;(monster-score (monster-number monster)) <----------------------------------------------------------------------------------- CORRIGIR (JOGO CRASHA)
+              (out-of-bounds shoot)))))
 
-;Shoot, Mythos-List -> Boolean-List
+;Shoot, Mythos -> Void
+;Given a Shoot, test if some monster was hit
+(define (shoot-hit-monster ws shoot monster-list)
+  (map (λ (monster) (shoot-hit-monster-aux ws shoot monster)) monster-list))
+
+;Shoot, Player -> Boolean
+;Given a Shoot, test if the player was hit
+(define (shoot-hit-player ws shoot player)
+  (if (zero? (shoot-life shoot))
+      #f
+      (if (and
+           (<= (- (posn-x (player-pos player)) (posn-x (player-center player)))
+               (posn-x (shoot-pos shoot))
+               (+ (posn-x (player-pos player)) (posn-x (player-center player))))
+           (<= (- (posn-y (player-pos player)) (posn-y (player-center player)))
+               (posn-y (shoot-pos shoot))
+               (+ (posn-y (player-pos player)) (posn-y (player-center player)))))
+          #t
+          (begin
+            (out-of-bounds shoot)
+            #f))))
+
+;WorldState -> Boolean
+;End the game
+(define (game-over? ws)
+  (= ws -1))
+
+;Shoot -> Void
+;Set the shoot life to 0 if out of bounds
+(define (out-of-bounds shoot)
+  (if (or (< (posn-y (shoot-pos shoot)) 0)
+          (> (posn-y (shoot-pos shoot)) (posn-y (background-size SCENE))))
+      (set-shoot-life! shoot 0)
+      (void)))
+
+;Shoot, Mythos-List -> Void
 ;Given a Shoot, returns a list with the monsters who have died
-(define (died-monsters-after-shoot ws shoot-list monster-list)
-  (map (λ (shoot monster) (shoot-hit? ws shoot list)) shoot-list monster-list))
+(define (shoot-hit ws target)
+  (if (player? target)
+      (begin
+        (shoot-hit-player  ws ENEMY-SHOOT-1  target)
+        (shoot-hit-player  ws ENEMY-SHOOT-2  target)
+        (shoot-hit-player  ws ENEMY-SHOOT-3  target))
+      (begin
+        (shoot-hit-monster ws PLAYER-SHOOT-1 target)
+        (shoot-hit-monster ws PLAYER-SHOOT-2 target)
+        (shoot-hit-monster ws PLAYER-SHOOT-3 target))))
+
+;Number Shoot -> Void
+;Sets the position of the shoots
+(define (move-shoots-aux y-move shoot)
+  (if (zero? (shoot-life shoot))
+      (void)
+      (set-shoot-pos! shoot (make-posn (posn-x (shoot-pos shoot)) (+ (posn-y (shoot-pos shoot)) y-move)))))
+
+;Number Shoot-List -> Void
+;Moves all the shoots
+(define (move-shoots y-move list)
+  (map (λ (shoot) (move-shoots-aux y-move shoot)) list))
+
+;WorldState -> WorldState
+;At every tick, this function calls others functions and increments the worldstate
+(define (tock ws)
+  (begin
+    (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
+    (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
+    (shoot-hit ws MONSTERS-LIST)
+    (if (shoot-hit ws NECRONOMICON) -1 (add1 ws))))
 
 (define (main ws)
   (big-bang ws
     (to-draw render)
     (on-key test-key)
-    (on-tick (λ (ws) (+ 1 ws)) 1)))
+    (on-tick tock)
+    (stop-when game-over?)))
