@@ -485,6 +485,30 @@
         (shoot-hit-monster ws PLAYER-SHOOT-2 target)
         (shoot-hit-monster ws PLAYER-SHOOT-3 target))))
 
+;Shoot Barrier -> Void
+(define (shoot-hit-barrier-aux shoot barrier)
+  (if (and (and
+            (<= (- (posn-x (barrier-pos barrier)) (posn-x (barrier-center barrier)))
+                (posn-x (shoot-pos shoot))
+                (+ (posn-x (barrier-pos barrier)) (posn-x (barrier-center barrier))))
+            (<= (- (posn-y (barrier-pos barrier)) (posn-y (barrier-center barrier)))
+                (posn-y (shoot-pos shoot))
+                (+ (posn-y (barrier-pos barrier)) (posn-y (barrier-center barrier))))) (> (shoot-life shoot) 0))
+      (begin
+        (set-barrier-life! barrier (sub1 (barrier-life barrier)))
+        (set-shoot-life! shoot 0))
+      (void)))
+
+;Void -> Void
+;Receives a Shoot calls the function that sees if every barrier was hit
+(define (shoot-hit-barrier)
+  (map (λ (shoot)
+         (begin
+           (shoot-hit-barrier-aux shoot HOLY-WATER-1)
+           (shoot-hit-barrier-aux shoot HOLY-WATER-2)
+           (shoot-hit-barrier-aux shoot HOLY-WATER-3)))
+       (append PLAYER-SHOOTS ENEMY-SHOOTS)))
+
 ;Number Shoot -> Void
 ;Sets the position of the shoots
 (define (move-shoots-aux y-move shoot)
@@ -505,6 +529,7 @@
       (begin
         (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
         (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
+        (shoot-hit-barrier)
         (shoot-hit ws MONSTERS-LIST)
         (if (shoot-hit ws NECRONOMICON) -1 (add1 ws)))))
 
