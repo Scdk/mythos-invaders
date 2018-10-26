@@ -3,7 +3,7 @@
 #reader(lib "htdp-advanced-reader.ss" "lang")((modname mythos) (read-case-sensitive #t) (teachpacks ((lib "image.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ((lib "image.rkt" "teachpack" "2htdp")) #f)))
 (require 2htdp/universe)
 (require 2htdp/image)
-
+                 
 (define PROPORTION 0.125)
 (define RESOLUTION (* 256 PROPORTION))
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
@@ -17,7 +17,7 @@
 (define SCORE 0)
 (define BIT-8-RED (make-color 82 16 0))
 (define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
-(define SAME-NUMBER 0)  
+(define SAME-NUMBER 0)
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -243,13 +243,17 @@
 (define (move-player ws key)
   (cond
         [(key=? key "left")
-         (if (< PLAYER-LOWER-LIMIT (posn-x (player-pos NECRONOMICON))) (begin
-           (set-player-pos! NECRONOMICON (make-posn (- (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) (posn-y (player-pos NECRONOMICON))))
-           ws) ws)]
+         (if (< PLAYER-LOWER-LIMIT (posn-x (player-pos NECRONOMICON)))
+             (begin
+               (set-player-pos! NECRONOMICON (make-posn (- (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) (posn-y (player-pos NECRONOMICON))))
+               ws)
+             ws)]
         [(key=? key "right")
-         (if (< (posn-x (player-pos NECRONOMICON)) PLAYER-HIGHER-LIMIT) (begin
-           (set-player-pos! NECRONOMICON (make-posn (+ (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) (posn-y (player-pos NECRONOMICON))))
-           ws) ws)]
+         (if (< (posn-x (player-pos NECRONOMICON)) PLAYER-HIGHER-LIMIT)
+             (begin
+               (set-player-pos! NECRONOMICON (make-posn (+ (posn-x (player-pos NECRONOMICON)) PLAYER-MOVEMENT) (posn-y (player-pos NECRONOMICON))))
+               ws)
+             ws)]
         [else ws]))
 
 ;WorldState -> WorldState
@@ -305,28 +309,29 @@
       (render-single-monster ws DEAD (background-frame SCENE))
       (render-single-monster ws (car list) (render-all-monsters (cdr list) ws))))
 
-;Barrier -> Image
-;Renders a barrier
-(define (render-single-barrier barrier img)
-  (overlay/offset (cond
-                    ([equal? (barrier-life barrier) 8] (barrier-frame8 barrier))
-                    ([equal? (barrier-life barrier) 7] (barrier-frame7 barrier))
-                    ([equal? (barrier-life barrier) 6] (barrier-frame6 barrier))
-                    ([equal? (barrier-life barrier) 5] (barrier-frame5 barrier))
-                    ([equal? (barrier-life barrier) 4] (barrier-frame4 barrier))
-                    ([equal? (barrier-life barrier) 3] (barrier-frame3 barrier))
-                    ([equal? (barrier-life barrier) 2] (barrier-frame2 barrier))
-                    ([equal? (barrier-life barrier) 1] (barrier-frame1 barrier))
-                    (else EMPTY))
-                  (- (posn-x (background-center SCENE)) (posn-x (barrier-pos barrier)))
-                  (- (posn-y (background-center SCENE)) (posn-y (barrier-pos barrier)))
-                  img))
+;Barrier-List Image -> Image
+;Auxiliar function for render barrier
+(define (render-barrier-aux list img)
+  (if (empty? list)
+      img
+      (place-image (cond
+                     ([equal? (barrier-life (car list)) 8] (barrier-frame8 (car list)))
+                     ([equal? (barrier-life (car list)) 7] (barrier-frame7 (car list)))
+                     ([equal? (barrier-life (car list)) 6] (barrier-frame6 (car list)))
+                     ([equal? (barrier-life (car list)) 5] (barrier-frame5 (car list)))
+                     ([equal? (barrier-life (car list)) 4] (barrier-frame4 (car list)))
+                     ([equal? (barrier-life (car list)) 3] (barrier-frame3 (car list)))
+                     ([equal? (barrier-life (car list)) 2] (barrier-frame2 (car list)))
+                     ([equal? (barrier-life (car list)) 1] (barrier-frame1 (car list)))
+                     (else EMPTY))
+                   (posn-x (barrier-pos (car list)))
+                   (posn-y (barrier-pos (car list)))
+                   (render-barrier-aux (cdr list) img))))
 
 ;List -> Image
 ;Renders all barriers
-(define (render-all-barriers list img)
-  (overlay (apply overlay (map (λ (barrier) (render-single-barrier barrier EMPTY-BKG)) list))
-           img))
+(define (render-all-barriers img)
+  (render-barrier-aux BARRIERS-LIST img))
 
 ;Image -> Image
 ;Renders the player
@@ -346,28 +351,25 @@
 (define (render-player-enemy-barrier ws)
    (render-all-barriers BARRIERS-LIST (render-player (render-all-monsters MONSTERS-LIST ws))))
 
+;Shoot-List Image -> Image
+;Auxiliar function for render shoot
+(define (render-shoot-aux list img)
+    (if (empty? list)
+        img
+        (place-image (if (zero? (shoot-life (car list))) EMPTY (shoot-frame (car list)))
+                     (posn-x (shoot-pos (car list)))
+                     (posn-y (shoot-pos (car list)))
+                     (render-shoot-aux (cdr list) img))))
+
 ;Shoot -> Image
 ;Renders a shoot
-(define (render-shoot shoot img)
-  (overlay/offset (if (zero? (shoot-life shoot)) EMPTY (shoot-frame shoot))
-               (- (posn-x (background-center SCENE)) (posn-x (shoot-pos shoot)))
-               (- (posn-y (background-center SCENE)) (posn-y (shoot-pos shoot)))
-               img))
-
-;List -> Image
-;Renders all shoots
-(define (render-all-shoots player-list monster-list img)
-  (overlay (apply overlay (map (λ (shoot) (render-shoot shoot EMPTY-BKG)) player-list))
-           (apply overlay (map (λ (shoot) (render-shoot shoot EMPTY-BKG)) monster-list))
-           img))
+(define (render-all-shoots img)
+  (render-shoot-aux (append PLAYER-SHOOTS ENEMY-SHOOTS) img))
 
 ;WorldState -> Image
 ;Renders the player, the mythos, the barriers and the shoots
 (define (render-player-enemy-barrier-shoot ws)
-  (render-all-shoots PLAYER-SHOOTS ENEMY-SHOOTS
-                     (render-all-barriers BARRIERS-LIST
-                                          (render-player
-                                           (render-all-monsters MONSTERS-LIST ws)))))
+  (render-all-shoots (render-all-barriers (render-player (render-all-monsters MONSTERS-LIST ws)))))
 
 ;WorldState Image -> Image
 ;Renders all, including the score
@@ -428,4 +430,5 @@
 (define (main ws)
   (big-bang ws
     (to-draw render)
-    (on-key test-key)))
+    (on-key test-key)
+    (on-tick (λ (ws) (+ 1 ws)) 1)))
