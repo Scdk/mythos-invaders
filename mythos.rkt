@@ -11,15 +11,15 @@
 (define EMPTY empty-image)
 (define EMPTY-BKG (scale PROPORTION (bitmap "sprites/Empty-Background.png")))
 (define PLAYER-MOVEMENT (* 40 PROPORTION))
-(define PLAYER-LOWER-LIMIT (* RESOLUTION 4))
-(define PLAYER-HIGHER-LIMIT (* RESOLUTION 11))
+(define PLAYER-LOWER-LIMIT (* RESOLUTION 3))
+(define PLAYER-HIGHER-LIMIT (* RESOLUTION 12))
 (define MENU (scale PROPORTION (bitmap "sprites/Title-Screen.png")))
 (define SCORE 0)
 (define BIT-8-RED (make-color 82 16 0))
 (define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
 (define SAME-NUMBER 0)
 (define GAME-OVER #f)
-(define RENDER-DEATH-FRAME 31)
+(define RENDER-DEATH-FRAME -1)
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -373,7 +373,7 @@
 (define (render-player-enemy-barrier-shoot ws)
   (render-all-shoots (render-all-barriers (render-player (render-all-monsters MONSTERS-LIST ws)))))
 
-;WorldState Image -> Image
+;WorldState -> Image
 ;Renders all, including the score
 (define (render ws)
   (if (zero? ws) MENU 
@@ -385,6 +385,15 @@
                           (- (posn-y (background-center SCENE)) RESOLUTION)
                           (render-player-enemy-barrier-shoot ws))
           (render-player-enemy-barrier-shoot ws))))
+
+;WorldState -> Image
+;Render the death frame
+(define (render-all ws)
+  (if (> RENDER-DEATH-FRAME -1)
+      (begin0
+        (render-death-frame ws (list-ref MONSTERS-LIST RENDER-DEATH-FRAME))
+        (set! RENDER-DEATH-FRAME -1))
+      (render ws)))
 
 ;Monster -> Image
 ;Renders the death of a monster
@@ -422,7 +431,7 @@
                    (posn-y (shoot-pos shoot))
                    (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))))
               (begin
-                (set! RENDER-DEATH-FRAME monster) ; <----------------------------------------------------------------------------------- CORRIGIR (NÃO RENDERIZA FRAME DE MORTE)
+                (set! RENDER-DEATH-FRAME (monster-number monster))
                 (set-shoot-life! shoot 0)
                 (set-monster-life! monster 0)
                 (monster-score (monster-number monster)))
@@ -491,15 +500,19 @@
 ;WorldState -> WorldState
 ;At every tick, this function calls others functions and increments the worldstate
 (define (tock ws)
-  (if (zero? ws) ws (begin
-                      (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
-                      (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
-                      (shoot-hit ws MONSTERS-LIST)
-                      (if (shoot-hit ws NECRONOMICON) -1 (add1 ws)))))
+  (if (zero? ws)
+      ws
+      (begin
+        (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
+        (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
+        (shoot-hit ws MONSTERS-LIST)
+        (if (shoot-hit ws NECRONOMICON) -1 (add1 ws)))))
 
 (define (main ws)
   (big-bang ws
-    (to-draw render)
+    (to-draw render-all)
     (on-key test-key)
     (on-tick tock)
     (stop-when game-over?)))
+
+(main 0)
