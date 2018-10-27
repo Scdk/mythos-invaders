@@ -17,7 +17,6 @@
 (define SCORE 0)
 (define BIT-8-RED (make-color 82 16 0))
 (define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
-(define SAME-NUMBER 0)
 (define GAME-OVER #f)
 (define RENDER-DEATH-FRAME -1)
 
@@ -262,38 +261,23 @@
 
 ;WorldState -> WorldState
 (define (monster-shoot ws)
-  (cond
-    [(equal? (shoot-life ENEMY-SHOOT-1) 0) (begin
-                                           (set-shoot-life! ENEMY-SHOOT-1  1)
-                                           (set-shoot-pos! ENEMY-SHOOT-1 (make-posn (posn-x
-                                                                                     (monster-pos (list-ref SHOOTING-MONSTERS (random-number 6))))
-                                                                                    (posn-y
-                                                                                     (monster-pos (list-ref SHOOTING-MONSTERS SAME-NUMBER)))))ws)]
-    [(equal? (shoot-life ENEMY-SHOOT-2) 0) (begin
-                                           (set-shoot-life! ENEMY-SHOOT-2  1)
-                                           (set-shoot-pos! ENEMY-SHOOT-2 (make-posn (posn-x
-                                                                                     (monster-pos (list-ref SHOOTING-MONSTERS (random-number 6))))
-                                                                                    (posn-y
-                                                                                     (monster-pos (list-ref SHOOTING-MONSTERS SAME-NUMBER)))))ws)]
-    [(equal? (shoot-life ENEMY-SHOOT-3) 0) (begin
-                                           (set-shoot-life! ENEMY-SHOOT-3  1)
-                                           (set-shoot-pos! ENEMY-SHOOT-3 (make-posn (posn-x
-                                                                                     (monster-pos (list-ref SHOOTING-MONSTERS (random-number 6))))
-                                                                                    (posn-y
-                                                                                     (monster-pos (list-ref SHOOTING-MONSTERS SAME-NUMBER)))))ws)]
-    [else ws]))
-
-;Struct -> Struct
-;Given monster test if life is 1, if is returns monster, else returns null
-(define (monster-alive list)
-  (cond
-    [(equal? (monster-life list) 1) list]
-    [else null]))
-
-;Number -> Number
-;Given a number generates a random number in range of the given number that is stored in SAME-NUMBER
-(define (random-number number)
-  (begin (set! SAME-NUMBER (random number)) SAME-NUMBER))
+  (let ([monster (list-ref SHOOTING-MONSTERS (random 6))])
+    (if (= (monster-number monster) 31)
+        ws
+        (cond
+          [(equal? (shoot-life ENEMY-SHOOT-1) 0) (begin
+                                                   (set-shoot-life! ENEMY-SHOOT-1  1)
+                                                   (set-shoot-pos! ENEMY-SHOOT-1 (make-posn (posn-x (monster-pos monster))
+                                                                                            (posn-y (monster-pos monster))))ws)]
+          [(equal? (shoot-life ENEMY-SHOOT-2) 0) (begin
+                                                   (set-shoot-life! ENEMY-SHOOT-2  1)
+                                                   (set-shoot-pos! ENEMY-SHOOT-2 (make-posn (posn-x (monster-pos monster))
+                                                                                            (posn-y (monster-pos monster))))ws)]
+          [(equal? (shoot-life ENEMY-SHOOT-3) 0) (begin
+                                                   (set-shoot-life! ENEMY-SHOOT-3  1)
+                                                   (set-shoot-pos! ENEMY-SHOOT-3 (make-posn (posn-x (monster-pos monster))
+                                                                                            (posn-y (monster-pos monster))))ws)]
+          [else ws]))))
 
 ;WorldState Mythos Image -> Image
 ;Renders a mythos
@@ -428,10 +412,11 @@
 ;Adds a new monster to the shooting list
 (define (add-new-shooting-monster monster-bottom)
   (cond
+    ([< (monster-number monster-bottom) 6]
+     (set! SHOOTING-MONSTERS (append SHOOTING-MONSTERS (cons DEAD empty))))
     ([zero? (monster-life (list-ref MONSTERS-LIST (- (monster-number monster-bottom) 6)))]
      (add-new-shooting-monster (list-ref MONSTERS-LIST (- (monster-number monster-bottom) 6))))
-    ([< (monster-number monster-bottom) 6] (void))
-    (else (append SHOOTING-MONSTERS (cons (list-ref MONSTERS-LIST (- (monster-number monster-bottom) 6)) empty)))))
+    (else (set! SHOOTING-MONSTERS (append SHOOTING-MONSTERS (cons (list-ref MONSTERS-LIST (- (monster-number monster-bottom) 6)) empty))))))
 
 ;Monster -> Void
 ;Remove monster from list if was hit
@@ -439,7 +424,7 @@
   (if (empty? (filter (λ (monster-a) (equal? monster monster-a)) SHOOTING-MONSTERS))
       (void)
       (begin
-        (remove monster SHOOTING-MONSTERS)
+        (set! SHOOTING-MONSTERS (remove monster SHOOTING-MONSTERS))
         (add-new-shooting-monster monster)))) ; <------------------------------------------------------------------------------------------------------ CORRIGIR, MONSTROS MORTOS ESTÃO ATIRANDO
 
 ;WorldState, Shoot, Monster -> Void
