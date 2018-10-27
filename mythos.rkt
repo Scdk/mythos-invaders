@@ -537,7 +537,16 @@
             (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
             (shoot-hit-barrier)
             (shoot-hit ws MONSTERS-LIST)
-            (if (shoot-hit ws NECRONOMICON) -1 (add1 ws))))))
+            (if (shoot-hit ws NECRONOMICON)
+                -1
+                (let ([counter (length (filter (λ (monster) (> (monster-life monster) 0)) MONSTERS-LIST))])
+                  (cond
+                    ([<= 24 counter 30] (add1 ws))
+                    ([<= 18 counter 23] (+ 2 ws))
+                    ([<= 12 counter 17] (+ 3 ws))
+                    ([<= 6  counter 11] (+ 4 ws))
+                    ([<= 0  counter  5] (+ 5 ws)))))))))
+                    
 
 ;WorldState -> Boolean
 ;End Game
