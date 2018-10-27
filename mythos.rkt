@@ -261,23 +261,25 @@
 
 ;WorldState -> WorldState
 (define (monster-shoot ws)
-  (let ([monster (list-ref SHOOTING-MONSTERS (random 6))])
-    (if (= (monster-number monster) 31)
-        ws
-        (cond
-          [(equal? (shoot-life ENEMY-SHOOT-1) 0) (begin
-                                                   (set-shoot-life! ENEMY-SHOOT-1  1)
-                                                   (set-shoot-pos! ENEMY-SHOOT-1 (make-posn (posn-x (monster-pos monster))
-                                                                                            (posn-y (monster-pos monster))))ws)]
-          [(equal? (shoot-life ENEMY-SHOOT-2) 0) (begin
-                                                   (set-shoot-life! ENEMY-SHOOT-2  1)
-                                                   (set-shoot-pos! ENEMY-SHOOT-2 (make-posn (posn-x (monster-pos monster))
-                                                                                            (posn-y (monster-pos monster))))ws)]
-          [(equal? (shoot-life ENEMY-SHOOT-3) 0) (begin
-                                                   (set-shoot-life! ENEMY-SHOOT-3  1)
-                                                   (set-shoot-pos! ENEMY-SHOOT-3 (make-posn (posn-x (monster-pos monster))
-                                                                                            (posn-y (monster-pos monster))))ws)]
-          [else ws]))))
+  (if (zero? (remainder ws 2))
+      (let ([monster (list-ref SHOOTING-MONSTERS (random 6))])
+        (if (= (monster-number monster) 31)
+            ws
+            (cond
+              [(equal? (shoot-life ENEMY-SHOOT-1) 0) (begin
+                                                       (set-shoot-life! ENEMY-SHOOT-1  1)
+                                                       (set-shoot-pos! ENEMY-SHOOT-1 (make-posn (posn-x (monster-pos monster))
+                                                                                                (posn-y (monster-pos monster))))ws)]
+              [(equal? (shoot-life ENEMY-SHOOT-2) 0) (begin
+                                                       (set-shoot-life! ENEMY-SHOOT-2  1)
+                                                       (set-shoot-pos! ENEMY-SHOOT-2 (make-posn (posn-x (monster-pos monster))
+                                                                                                (posn-y (monster-pos monster))))ws)]
+              [(equal? (shoot-life ENEMY-SHOOT-3) 0) (begin
+                                                       (set-shoot-life! ENEMY-SHOOT-3  1)
+                                                       (set-shoot-pos! ENEMY-SHOOT-3 (make-posn (posn-x (monster-pos monster))
+                                                                                                (posn-y (monster-pos monster))))ws)]
+              [else ws])))
+      ws))
 
 ;WorldState Mythos Image -> Image
 ;Renders a mythos
