@@ -11,7 +11,7 @@
 (define MAX-HEALTH 8)
 (define EMPTY empty-image)
 (define EMPTY-BKG (scale PROPORTION (bitmap "sprites/Empty-Background.png")))
-(define PLAYER-MOVEMENT (* 40 PROPORTION))
+(define PLAYER-MOVEMENT (* 60 PROPORTION))
 (define PLAYER-LOWER-LIMIT (* RESOLUTION 3))
 (define PLAYER-HIGHER-LIMIT (* RESOLUTION 12))
 (define MENU (scale PROPORTION (bitmap "sprites/Title-Screen.png")))
