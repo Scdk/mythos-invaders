@@ -19,6 +19,7 @@
 (define DEATH-FRAME (scale PROPORTION (bitmap "sprites/Death.png")))
 (define GAME-OVER #f)
 (define RENDER-DEATH-FRAME -1)
+(define SPEED (* 4 PROPORTION))
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -420,6 +421,34 @@
      (add-new-shooting-monster (list-ref MONSTERS-LIST (- (monster-number monster-bottom) 6))))
     (else (set! SHOOTING-MONSTERS (append SHOOTING-MONSTERS (cons (list-ref MONSTERS-LIST (- (monster-number monster-bottom) 6)) empty))))))
 
+;WorldState -> Void
+;Changes the value of the monsters posn according to WorldState
+(define (move-monsters ws)
+  (cond
+    [(not (empty?
+           (filter (λ (monster-a) (>= (posn-y (monster-pos monster-a)) (- (posn-y (background-size SCENE)) (* 2 RESOLUTION))))
+                   (filter (λ (monster) (> (monster-life monster) 0)) MONSTERS-LIST))))
+     #t]
+    [(and (not (empty?
+                (filter (λ (monster-a) (>= (posn-y (monster-pos monster-a)) (- (posn-y (background-size SCENE)) (* 4.5 RESOLUTION))))
+                        MONSTERS-LIST)))
+          (not (empty? (filter (λ (barrier-a) (> (barrier-life barrier-a) 0)) BARRIERS-LIST))))
+     (begin (map (λ (barrier-a) (set-barrier-life! barrier-a 0)) BARRIERS-LIST) #f)]
+    [(empty?
+      (filter (λ (monster-a) (or (> (posn-x (monster-pos monster-a)) (* RESOLUTION 14)) (< (posn-x (monster-pos monster-a)) RESOLUTION)))
+              (filter (λ (monster) (> (monster-life monster) 0)) MONSTERS-LIST)))
+     (begin (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (+ (posn-x (monster-pos monster-a)) SPEED)
+                                                                (posn-y (monster-pos monster-a)))))
+          (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST)) #f)]
+    [else (begin (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (posn-x (monster-pos monster-a))
+                                                                            (+ (posn-y (monster-pos monster-a)) (* 64 PROPORTION)))))
+                      (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST))
+                 (set! SPEED (* SPEED -1))
+                 (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (+ (posn-x (monster-pos monster-a)) SPEED)
+                                                                (posn-y (monster-pos monster-a)))))
+          (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST))
+                 #f)]))
+
 ;Monster -> Void
 ;Remove monster from list if was hit
 (define (remove-monster-from-shooting-list monster)
@@ -427,7 +456,7 @@
       (void)
       (begin
         (set! SHOOTING-MONSTERS (remove monster SHOOTING-MONSTERS))
-        (add-new-shooting-monster monster)))) ; <------------------------------------------------------------------------------------------------------ CORRIGIR, MONSTROS MORTOS ESTÃO ATIRANDO
+        (add-new-shooting-monster monster))))
 
 ;WorldState, Shoot, Monster -> Void
 ;Auxiliar function for monster hit 
@@ -537,7 +566,7 @@
             (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
             (shoot-hit-barrier)
             (shoot-hit ws MONSTERS-LIST)
-            (if (shoot-hit ws NECRONOMICON)
+            (if (or (shoot-hit ws NECRONOMICON) (move-monsters ws))
                 -1
                 (let ([counter (length (filter (λ (monster) (> (monster-life monster) 0)) MONSTERS-LIST))])
                   (cond
