@@ -3,7 +3,8 @@
 #reader(lib "htdp-advanced-reader.ss" "lang")((modname mythos) (read-case-sensitive #t) (teachpacks ((lib "image.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ((lib "image.rkt" "teachpack" "2htdp")) #f)))
 (require 2htdp/universe)
 (require 2htdp/image)
-                 
+(require rsound)
+ 
 (define PROPORTION 0.125)
 (define RESOLUTION (* 256 PROPORTION))
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
@@ -20,6 +21,10 @@
 (define GAME-OVER #f)
 (define RENDER-DEATH-FRAME -1)
 (define SPEED (* 4 PROPORTION))
+(define BKG-MUSIC (rs-read "sound/BKGMusicSeamless.wav"))
+(define EXPLOSION-SND (rs-read "sound/Explosion.wav"))
+(define SHOOT-SND (rs-read "sound/Shoot.wav"))
+(define START-SND (rs-read "sound/Start-game.wav"))
 
 ;A Mythos has two frames and the position of the center and represents the enemies
 (define-struct mythos [frame1 frame2 center])
@@ -225,18 +230,24 @@
 ;Given the WorldState, checks if the game is paused, if it is, it begins the game, if not the player shoots
 (define (test-space ws)
   (cond
-    [(equal? ws 0) (add1 ws)]
+    [(equal? ws 0) (begin
+                     (play START-SND) ; <-------------------------------------------------------------------------------------------------
+                     (add1 ws))]
     [(= ws -1) (begin (set! GAME-OVER #t) ws)]
+    [(= ws -2) (begin (set! GAME-OVER #t) ws)]
     [else (cond
             [(equal? (shoot-life PLAYER-SHOOT-1) 0) (begin
+                                                      (play SHOOT-SND) ; <-------------------------------------------------------------------------------------------------
                                                       (set-shoot-life! PLAYER-SHOOT-1 1)
                                                       (set-shoot-pos! PLAYER-SHOOT-1 (make-posn (posn-x (player-pos NECRONOMICON))
                                                                                                 (posn-y (player-pos NECRONOMICON)))) ws)]
             [(equal? (shoot-life PLAYER-SHOOT-2) 0) (begin
+                                                      (play SHOOT-SND) ; <-------------------------------------------------------------------------------------------------
                                                       (set-shoot-life! PLAYER-SHOOT-2  1)
                                                       (set-shoot-pos! PLAYER-SHOOT-2 (make-posn (posn-x (player-pos NECRONOMICON))
                                                                                                 (posn-y (player-pos NECRONOMICON)))) ws)]
             [(equal? (shoot-life PLAYER-SHOOT-3) 0) (begin
+                                                      (play SHOOT-SND) ; <-------------------------------------------------------------------------------------------------
                                                       (set-shoot-life! PLAYER-SHOOT-3  1)
                                                       (set-shoot-pos! PLAYER-SHOOT-3 (make-posn (posn-x (player-pos NECRONOMICON))
                                                                                                 (posn-y (player-pos NECRONOMICON)))) ws)]
@@ -262,25 +273,26 @@
 
 ;WorldState -> WorldState
 (define (monster-shoot ws)
-  (if (zero? (remainder ws 2))
-      (let ([monster (list-ref SHOOTING-MONSTERS (random 6))])
-        (if (= (monster-number monster) 31)
-            ws
-            (cond
-              [(equal? (shoot-life ENEMY-SHOOT-1) 0) (begin
-                                                       (set-shoot-life! ENEMY-SHOOT-1  1)
-                                                       (set-shoot-pos! ENEMY-SHOOT-1 (make-posn (posn-x (monster-pos monster))
-                                                                                                (posn-y (monster-pos monster))))ws)]
-              [(equal? (shoot-life ENEMY-SHOOT-2) 0) (begin
-                                                       (set-shoot-life! ENEMY-SHOOT-2  1)
-                                                       (set-shoot-pos! ENEMY-SHOOT-2 (make-posn (posn-x (monster-pos monster))
-                                                                                                (posn-y (monster-pos monster))))ws)]
-              [(equal? (shoot-life ENEMY-SHOOT-3) 0) (begin
-                                                       (set-shoot-life! ENEMY-SHOOT-3  1)
-                                                       (set-shoot-pos! ENEMY-SHOOT-3 (make-posn (posn-x (monster-pos monster))
-                                                                                                (posn-y (monster-pos monster))))ws)]
-              [else ws])))
-      ws))
+  (let ([monster (list-ref SHOOTING-MONSTERS (random 6))])
+    (if (= (monster-number monster) 31)
+        ws
+        (cond
+          [(equal? (shoot-life ENEMY-SHOOT-1) 0) (begin
+                                                   (play SHOOT-SND) ; <-------------------------------------------------------------------------------------------------
+                                                   (set-shoot-life! ENEMY-SHOOT-1  1)
+                                                   (set-shoot-pos! ENEMY-SHOOT-1 (make-posn (posn-x (monster-pos monster))
+                                                                                            (posn-y (monster-pos monster))))ws)]
+          [(equal? (shoot-life ENEMY-SHOOT-2) 0) (begin
+                                                   (play SHOOT-SND) ; <-------------------------------------------------------------------------------------------------
+                                                   (set-shoot-life! ENEMY-SHOOT-2  1)
+                                                   (set-shoot-pos! ENEMY-SHOOT-2 (make-posn (posn-x (monster-pos monster))
+                                                                                            (posn-y (monster-pos monster))))ws)]
+          [(equal? (shoot-life ENEMY-SHOOT-3) 0) (begin
+                                                   (play SHOOT-SND) ; <-------------------------------------------------------------------------------------------------
+                                                   (set-shoot-life! ENEMY-SHOOT-3  1)
+                                                   (set-shoot-pos! ENEMY-SHOOT-3 (make-posn (posn-x (monster-pos monster))
+                                                                                            (posn-y (monster-pos monster))))ws)]
+          [else ws]))))
 
 ;WorldState Mythos Image -> Image
 ;Renders a mythos
@@ -378,17 +390,23 @@
 ;WorldState -> Image
 ;Render the death frame
 (define (render-all ws)
-  (if (= ws -1)
+  (if (= ws -2)
       (overlay (overlay/align/offset "middle" "middle"
-                                     (text "GAME OVER" (* 1.25 RESOLUTION) BIT-8-RED)
+                                     (text "YOU WIN" (* 1.25 RESOLUTION) BIT-8-RED)
                                      0 (* 2 RESOLUTION)
                                      (text (number->string SCORE) (* 1.25 RESOLUTION) BIT-8-RED))
                EMPTY-BKG)
-      (if (> RENDER-DEATH-FRAME -1)
-          (begin0
-            (render-death-frame ws (list-ref MONSTERS-LIST RENDER-DEATH-FRAME))
-            (set! RENDER-DEATH-FRAME -1))
-          (render ws))))
+      (if (= ws -1)
+          (overlay (overlay/align/offset "middle" "middle"
+                                         (text "GAME OVER" (* 1.25 RESOLUTION) BIT-8-RED)
+                                         0 (* 2 RESOLUTION)
+                                         (text (number->string SCORE) (* 1.25 RESOLUTION) BIT-8-RED))
+                   EMPTY-BKG)
+          (if (> RENDER-DEATH-FRAME -1)
+              (begin0
+                (render-death-frame ws (list-ref MONSTERS-LIST RENDER-DEATH-FRAME))
+                (set! RENDER-DEATH-FRAME -1))
+              (render ws)))))
 
 ;Monster -> Image
 ;Renders the death of a monster
@@ -407,9 +425,10 @@
 ;Given a number of a monster, returns the equivalent score
 (define (monster-score number)
         (cond
-          [(<= 0 number 5) (scoreboard 40)]
-          [(<= 6 number 17) (scoreboard 20)]
-          [(<= 18 number 29) (scoreboard 10)]))
+          [(<= 0 number 5)   (scoreboard 40)]
+          [(<= 6 number 17)  (scoreboard 20)]
+          [(<= 18 number 29) (scoreboard 10)]
+          [(=  number 30)    (scoreboard (random 60 200))]))
 
 ;Monster -> Void
 ;Adds a new monster to the shooting list
@@ -473,6 +492,7 @@
                    (posn-y (shoot-pos shoot))
                    (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))))
               (begin
+                (play EXPLOSION-SND) ; <-------------------------------------------------------------------------------------------------
                 (set! RENDER-DEATH-FRAME (monster-number monster))
                 (set-shoot-life! shoot 0)
                 (set-monster-life! monster 0)
@@ -554,6 +574,28 @@
 (define (move-shoots y-move list)
   (map (λ (shoot) (move-shoots-aux y-move shoot)) list))
 
+;WorldState -> Void
+;Spawn Boss
+(define (call-of-cthulhu ws)
+  (if (<= 0 (remainder ws 500) 5)
+      (set-monster-life! BOSS 1)
+      (void)))
+
+;Void -> Void
+;Moves the Boss
+(define (move-boss)
+  (if (zero? (monster-life BOSS))
+      (set-monster-pos! BOSS (make-posn (posn-x CENTER) RESOLUTION))
+      (if (out-of-bounds-boss)
+          (begin
+            (set-monster-life! BOSS 0))
+          (set-monster-pos! BOSS (make-posn (+ (posn-x (monster-pos BOSS)) (* 20 PROPORTION)) (posn-y (monster-pos BOSS)))))))
+
+;Void -> Boolean
+;Check if Boss is out of bounds
+(define (out-of-bounds-boss)
+  (> (posn-x (monster-pos BOSS)) (- (posn-x (background-size SCENE)) RESOLUTION)))
+
 ;WorldState -> WorldState
 ;At every tick, this function calls others functions and increments the worldstate
 (define (tock ws)
@@ -561,32 +603,34 @@
     ((= -1 ws) ws)
     ((zero? ws) ws)
     (else (begin
-            (monster-shoot ws)
+            ;(monster-shoot ws)
             (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
             (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
             (shoot-hit-barrier)
             (shoot-hit ws MONSTERS-LIST)
+            (call-of-cthulhu ws)
+            (move-boss)
             (if (or (shoot-hit ws NECRONOMICON) (move-monsters ws))
                 -1
                 (let ([counter (length (filter (λ (monster) (> (monster-life monster) 0)) MONSTERS-LIST))])
                   (cond
-                    ([<= 24 counter 30] (add1 ws))
-                    ([<= 18 counter 23] (+ 2 ws))
-                    ([<= 12 counter 17] (+ 3 ws))
-                    ([<= 6  counter 11] (+ 4 ws))
-                    ([<= 0  counter  5] (+ 5 ws)))))))))
-                    
+                    ([<= 24 counter 31] (add1 ws))
+                    ([<= 18 counter 23] (+ 2  ws))
+                    ([<= 12 counter 17] (+ 3  ws))
+                    ([<= 6  counter 11] (+ 4  ws))
+                    ([<= 1  counter  5] (+ 5  ws))
+                    ([zero? counter] -2))))))))
 
 ;WorldState -> Boolean
 ;End Game
 (define (game-over? ws)
   GAME-OVER)
 
-(define (main ws)
-  (big-bang ws
-    (on-tick tock)
-    (to-draw render-all)
-    (on-key test-key)
-    (stop-when game-over?)))
+(define (main)
+    (big-bang 0
+      (on-tick tock)
+      (to-draw render-all)
+      (on-key test-key)
+      (stop-when game-over?)))
 
-(main 0)
+(main)
