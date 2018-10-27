@@ -455,7 +455,7 @@
      (begin (map (λ (barrier-a) (set-barrier-life! barrier-a 0)) BARRIERS-LIST) #f)]
     [(empty?
       (filter (λ (monster-a) (or (> (posn-x (monster-pos monster-a)) (* RESOLUTION 14)) (< (posn-x (monster-pos monster-a)) RESOLUTION)))
-              (filter (λ (monster) (> (monster-life monster) 0)) MONSTERS-LIST)))
+              (filter (λ (monster) (> (monster-life monster) 0)) (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST))))
      (begin (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (+ (posn-x (monster-pos monster-a)) SPEED)
                                                                 (posn-y (monster-pos monster-a)))))
           (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST)) #f)]
@@ -603,7 +603,7 @@
     ((= -1 ws) ws)
     ((zero? ws) ws)
     (else (begin
-            ;(monster-shoot ws)
+            (monster-shoot ws)
             (move-shoots (- 0 (* 40 PROPORTION)) PLAYER-SHOOTS)
             (move-shoots      (* 40 PROPORTION)  ENEMY-SHOOTS)
             (shoot-hit-barrier)
