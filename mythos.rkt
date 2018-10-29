@@ -5,7 +5,7 @@
 (require 2htdp/image)
 (require rsound)
  
-(define PROPORTION 0.125)
+(define PROPORTION 0.2)
 (define RESOLUTION (* 256 PROPORTION))
 (define CENTER (make-posn (/ RESOLUTION 2) (/ RESOLUTION 2)))
 (define MAX-HEALTH 8)
@@ -444,29 +444,43 @@
 ;Changes the value of the monsters posn according to WorldState
 (define (move-monsters ws)
   (cond
-    [(not (empty?
-           (filter (λ (monster-a) (>= (posn-y (monster-pos monster-a)) (- (posn-y (background-size SCENE)) (* 2 RESOLUTION))))
-                   (filter (λ (monster) (> (monster-life monster) 0)) MONSTERS-LIST))))
+    [(not
+      (empty?
+       (filter
+        (λ (monster-a)
+          (>= (posn-y (monster-pos monster-a)) (- (posn-y (background-size SCENE)) (* 2 RESOLUTION))))
+        (filter (λ (monster) (> (monster-life monster) 0)) (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST)))))
      #t]
-    [(and (not (empty?
-                (filter (λ (monster-a) (>= (posn-y (monster-pos monster-a)) (- (posn-y (background-size SCENE)) (* 4.5 RESOLUTION))))
-                        MONSTERS-LIST)))
+    [(and (not
+           (empty?
+            (filter
+             (λ (monster-a)
+               (>= (posn-y (monster-pos monster-a)) (- (posn-y (background-size SCENE)) (* 4.5 RESOLUTION))))
+             MONSTERS-LIST)))
           (not (empty? (filter (λ (barrier-a) (> (barrier-life barrier-a) 0)) BARRIERS-LIST))))
      (begin (map (λ (barrier-a) (set-barrier-life! barrier-a 0)) BARRIERS-LIST) #f)]
     [(empty?
-      (filter (λ (monster-a) (or (> (posn-x (monster-pos monster-a)) (* RESOLUTION 14)) (< (posn-x (monster-pos monster-a)) RESOLUTION)))
-              (filter (λ (monster) (> (monster-life monster) 0)) (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST))))
-     (begin (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (+ (posn-x (monster-pos monster-a)) SPEED)
-                                                                (posn-y (monster-pos monster-a)))))
-          (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST)) #f)]
-    [else (begin (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (posn-x (monster-pos monster-a))
-                                                                            (+ (posn-y (monster-pos monster-a)) (* 64 PROPORTION)))))
-                      (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST))
-                 (set! SPEED (* SPEED -1))
-                 (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (+ (posn-x (monster-pos monster-a)) SPEED)
-                                                                (posn-y (monster-pos monster-a)))))
-          (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST))
-                 #f)]))
+      (filter
+       (λ (monster-a)
+         (or (> (posn-x (monster-pos monster-a)) (* RESOLUTION 14)) (< (posn-x (monster-pos monster-a)) RESOLUTION)))
+       (filter (λ (monster) (> (monster-life monster) 0)) (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST))))
+     (begin
+       (map (λ (monster-a)
+              (set-monster-pos! monster-a (make-posn (+ (posn-x (monster-pos monster-a)) SPEED)
+                                                     (posn-y (monster-pos monster-a)))))
+            (filter (λ (monster) (> (monster-life monster) 0)) (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST)))
+       #f)]
+    [else
+     (begin
+       (map (λ (monster-a)
+              (set-monster-pos! monster-a (make-posn (posn-x (monster-pos monster-a))
+                                                     (+ (posn-y (monster-pos monster-a)) (* 64 PROPORTION)))))
+            (filter (λ (monster) (> (monster-life monster) 0)) (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST)))
+       (set! SPEED (* SPEED -1))
+       (map (λ (monster-a) (set-monster-pos! monster-a (make-posn (+ (posn-x (monster-pos monster-a)) SPEED)
+                                                                  (posn-y (monster-pos monster-a)))))
+            (filter (λ (monster) (> (monster-life monster) 0)) (filter (λ (monster-a) (< (monster-number monster-a) 30)) MONSTERS-LIST)))
+       #f)]))
 
 ;Monster -> Void
 ;Remove monster from list if was hit
@@ -493,6 +507,7 @@
                    (+ (posn-y (monster-pos monster)) (posn-y (mythos-center (monster-type monster))))))
               (begin
                 (play EXPLOSION-SND) ; <-------------------------------------------------------------------------------------------------
+                (set! SPEED (* 1.0625 SPEED))
                 (set! RENDER-DEATH-FRAME (monster-number monster))
                 (set-shoot-life! shoot 0)
                 (set-monster-life! monster 0)
